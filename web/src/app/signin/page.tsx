@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import Link from "next/link";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +21,21 @@ export default function SigninPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    control,
+    formState: { errors, isSubmitted },
   } = useForm<SigninData>({
     resolver: zodResolver(signinSchema),
+    mode: "onTouched",
+    defaultValues: { email: "", password: "" },
   });
+
+  const values = useWatch({ control });
+
+  // Erro de campo vazio só aparece depois da primeira tentativa de envio.
+  function visibleError(field: keyof SigninData) {
+    if (!isSubmitted && !values[field]?.trim()) return undefined;
+    return errors[field]?.message;
+  }
 
   function onSubmit(data: SigninData) {
     console.log(data);
@@ -51,7 +63,7 @@ export default function SigninPage() {
                   {...register("email")}
                 />
                 <p className="min-h-5 text-sm text-red-500">
-                  {errors.email?.message}
+                  {visibleError("email")}
                 </p>
               </div>
 
@@ -73,7 +85,7 @@ export default function SigninPage() {
                 />
 
                 <p className="min-h-5 text-sm text-red-500">
-                  {errors.password?.message}
+                  {visibleError("password")}
                 </p>
               </div>
             </div>
@@ -87,6 +99,16 @@ export default function SigninPage() {
             <Button type="button" variant="outline" className="w-full">
               Login com Google
             </Button>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Não tem uma conta?{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Cadastre-se
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>
