@@ -31,7 +31,6 @@ export default function SigninPage() {
 
   const values = useWatch({ control });
 
-  // Erro de campo vazio só aparece depois da primeira tentativa de envio.
   function visibleError(field: keyof SigninData) {
     if (!isSubmitted && !values[field]?.trim()) return undefined;
     return errors[field]?.message;
