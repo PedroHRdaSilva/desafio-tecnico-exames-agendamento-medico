@@ -5,6 +5,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { UsersModule } from './users/users.module.js';
 import { MailModule } from './email/mail.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MailModule } from './email/mail.module.js';
     }),
 
     UsersModule,
+    AuthModule,
     MailModule,
   ],
   controllers: [AppController],

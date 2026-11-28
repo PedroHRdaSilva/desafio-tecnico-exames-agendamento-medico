@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { User } from './entities/user.entity.js';
@@ -12,10 +11,6 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: getModelToken(User.name), useValue: {} },
-        {
-          provide: ConfigService,
-          useValue: { getOrThrow: () => 'test-secret' },
-        },
       ],
     }).compile();
 

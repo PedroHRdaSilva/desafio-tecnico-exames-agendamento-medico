@@ -16,6 +16,7 @@ async function bootstrap() {
     .setTitle('Agendamento de Exames API')
     .setDescription('API do desafio técnico de agendamento de exames médicos')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
