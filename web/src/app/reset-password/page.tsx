@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   Card,
@@ -11,14 +13,22 @@ import {
 import { ResetPasswordForm } from "@/app/reset-password/reset-password-form";
 
 type ResetPasswordPageProps = {
-  params: Promise<{ token: string }>;
+  searchParams: Promise<{ token?: string }>;
 };
 
-export default async function ResetPasswordPage({
-  params,
+async function ResetPasswordContent({
+  searchParams,
 }: ResetPasswordPageProps) {
-  const { token } = await params;
+  const { token } = await searchParams;
 
+  if (!token) redirect("/forgot-password");
+
+  return <ResetPasswordForm token={token} />;
+}
+
+export default function ResetPasswordPage({
+  searchParams,
+}: ResetPasswordPageProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-amber-200 p-4">
       <Card className="w-full max-w-sm">
@@ -28,7 +38,9 @@ export default async function ResetPasswordPage({
         </CardHeader>
 
         <CardContent>
-          <ResetPasswordForm token={token} />
+          <Suspense fallback={null}>
+            <ResetPasswordContent searchParams={searchParams} />
+          </Suspense>
         </CardContent>
 
         <CardFooter className="justify-center">

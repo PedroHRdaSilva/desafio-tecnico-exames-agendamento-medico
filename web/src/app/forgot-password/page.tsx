@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,77 +15,66 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { forgotPasswordSchema } from "@/app/forgot-password/schema";
-
-function validateEmail(email: string) {
-  const result = forgotPasswordSchema.safeParse({ email });
-  return result.success ? undefined : result.error.issues[0]?.message;
-}
+import { api, ApiError } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState<string>();
-  const [submitted, setSubmitted] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  function handleChange(value: string) {
-    setEmail(value);
-    if (submitted) setError(validateEmail(value));
-  }
-
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
 
-    const message = validateEmail(email);
-    setError(message);
-    if (message) return;
-
-    console.log({ email: email.trim() });
-    setSent(true);
+    try {
+      await api("/users/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      toast.success(
+        "Se houver uma conta com esse e-mail, você receberá um link para redefinir sua senha.",
+      );
+      router.push("/signin");
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Erro ao enviar e-mail",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-amber-200 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Esqueceu sua senha?</CardTitle>
+          <CardTitle className="text-2xl p-2">Esqueceu sua senha?</CardTitle>
           <CardDescription>
-            {sent
-              ? "Se houver uma conta com esse e-mail, você receberá um link para redefinir sua senha."
-              : "Informe seu e-mail e enviaremos um link para você redefinir sua senha"}
+            Informe seu e-mail e enviaremos um link para você redefinir sua
+            senha
           </CardDescription>
         </CardHeader>
 
-        {!sent && (
-          <CardContent>
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-4"
-              noValidate
-            >
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={email}
-                  onChange={(e) => handleChange(e.target.value)}
-                  aria-invalid={!!error}
-                  aria-describedby="email-error"
-                />
-                <p id="email-error" className="min-h-5 text-sm text-red-500">
-                  {error}
-                </p>
-              </div>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-              <Button type="submit" className="w-full">
-                Enviar link
-              </Button>
-            </form>
-          </CardContent>
-        )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Enviando..." : "Enviar link"}
+            </Button>
+          </form>
+        </CardContent>
 
         <CardFooter className="justify-center">
           <Link

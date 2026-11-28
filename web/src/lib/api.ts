@@ -10,6 +10,20 @@ export class ApiError extends Error {
   }
 }
 
+async function extractErrorMessage(res: Response): Promise<string> {
+  const body = await res.text().catch(() => "");
+
+  try {
+    const { message } = JSON.parse(body);
+    if (Array.isArray(message)) return message.join(", ");
+    if (typeof message === "string") return message;
+  } catch {
+    // corpo não é JSON: usa o texto cru abaixo
+  }
+
+  return body || res.statusText;
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -17,8 +31,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new ApiError(res.status, body || res.statusText);
+    throw new ApiError(res.status, await extractErrorMessage(res));
   }
 
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
