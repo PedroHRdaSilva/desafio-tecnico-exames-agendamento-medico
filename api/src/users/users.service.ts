@@ -134,7 +134,7 @@ export class UsersService {
       },
       {
         $set: {
-          passwordResetExpiress: experiedDate,
+          passwordResetExpires: experiedDate,
           passwordResetToken: resetPasswordToken,
         },
       },
@@ -152,7 +152,7 @@ export class UsersService {
   async resetPassword(token: string, password: string) {
     const user = await this.userModel.findOne({
       passwordResetToken: token,
-      passwordResetExpiress: { $gt: new Date() },
+      passwordResetExpires: { $gt: new Date() },
     });
 
     if (!user) {
@@ -165,7 +165,7 @@ export class UsersService {
       { _id: user._id },
       {
         $set: { password: hashedPassword },
-        $unset: { passwordResetToken: 1, passwordResetExpiress: 1 },
+        $unset: { passwordResetToken: 1, passwordResetExpires: 1 },
       },
     );
 
