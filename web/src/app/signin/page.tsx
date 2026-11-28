@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,28 +16,49 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SigninData, signinSchema } from "@/app/signin/schema";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api";
 
 export default function SigninPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const {
     register,
     handleSubmit,
-    control,
-    formState: { errors, isSubmitted },
+    formState: { errors },
   } = useForm<SigninData>({
     resolver: zodResolver(signinSchema),
-    mode: "onTouched",
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: { email: "", password: "" },
   });
 
-  const values = useWatch({ control });
+  async function onSubmit(data: SigninData) {
+    setLoading(true);
+    try {
+      await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
 
-  function visibleError(field: keyof SigninData) {
-    if (!isSubmitted && !values[field]?.trim()) return undefined;
-    return errors[field]?.message;
-  }
+      toast.success("Login realizado com sucesso!");
+      router.push("/dashboard");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        toast.error("Credenciais inválidas. Verifique seu e-mail e senha.");
+        return;
+      }
 
-  function onSubmit(data: SigninData) {
-    console.log(data);
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível conectar ao servidor. Tente novamente.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -50,7 +71,7 @@ export default function SigninPage() {
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent>
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
@@ -62,7 +83,7 @@ export default function SigninPage() {
                   {...register("email")}
                 />
                 <p className="min-h-5 text-sm text-red-500">
-                  {visibleError("email")}
+                  {errors.email?.message}
                 </p>
               </div>
 
@@ -84,15 +105,15 @@ export default function SigninPage() {
                 />
 
                 <p className="min-h-5 text-sm text-red-500">
-                  {visibleError("password")}
+                  {errors.password?.message}
                 </p>
               </div>
             </div>
           </CardContent>
 
           <CardFooter className="flex-col gap-2">
-            <Button type="submit" className="w-full">
-              Entrar
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
 
             <Button type="button" variant="outline" className="w-full">

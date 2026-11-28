@@ -131,11 +131,7 @@ export function SignupForm() {
           )}
         />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Criando conta..." : "Criar conta"}
         </Button>
       </form>

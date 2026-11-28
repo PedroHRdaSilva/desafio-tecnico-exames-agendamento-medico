@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await api("/users/forgot-password", {
+      await api("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email: email.trim() }),
       });
