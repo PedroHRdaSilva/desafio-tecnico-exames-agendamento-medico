@@ -32,7 +32,6 @@ export class JwtAuthGuard implements CanActivate {
       .switchToHttp()
       .getRequest<Request & { user?: AccessTokenPayload['user'] }>();
 
-    // Prioriza o cookie httpOnly (front). O header Bearer continua aceito para Swagger/Postman.
     const cookies = request.cookies as Record<string, string> | undefined;
     const cookieToken = cookies?.[TOKEN_COOKIE];
     const [scheme, headerToken] =

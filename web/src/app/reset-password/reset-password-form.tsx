@@ -41,7 +41,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const onSubmit = async ({ password }: ResetPasswordData) => {
     setLoading(true);
     try {
-      await api("/users/reset-password", {
+      await api("/auth/reset-password", {
         method: "POST",
         body: JSON.stringify({ token, password }),
       });
@@ -102,11 +102,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           )}
         />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Redefinindo..." : "Redefinir senha"}
         </Button>
       </form>
