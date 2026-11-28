@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 
+export const TOKEN_COOKIE = 'token';
+
 export interface AccessTokenPayload {
   type: 'access';
   user: {
@@ -30,9 +32,15 @@ export class JwtAuthGuard implements CanActivate {
       .switchToHttp()
       .getRequest<Request & { user?: AccessTokenPayload['user'] }>();
 
-    const [scheme, token] = request.headers.authorization?.split(' ') ?? [];
+    // Prioriza o cookie httpOnly (front). O header Bearer continua aceito para Swagger/Postman.
+    const cookies = request.cookies as Record<string, string> | undefined;
+    const cookieToken = cookies?.[TOKEN_COOKIE];
+    const [scheme, headerToken] =
+      request.headers.authorization?.split(' ') ?? [];
+    const token =
+      cookieToken || (scheme === 'Bearer' ? headerToken : undefined);
 
-    if (scheme !== 'Bearer' || !token) {
+    if (!token) {
       throw new UnauthorizedException('Token não informado');
     }
 
