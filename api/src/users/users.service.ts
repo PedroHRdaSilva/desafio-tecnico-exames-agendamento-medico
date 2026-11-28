@@ -1,25 +1,19 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { User, UserDocument } from './entities/user.entity.js';
-import jwt from 'jsonwebtoken';
-import { MailService } from '../email/mail.service.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    private readonly config: ConfigService,
-    private readonly mailService: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
@@ -103,72 +97,5 @@ export class UsersService {
 
     await this.userModel.updateOne({ _id: id }, { deletedAt: new Date() });
     return `Usuario com id ${id} foi removido com sucesso`;
-  }
-
-  async forgotPassword(email: string) {
-    const user = await this.userModel.findOne({
-      email: email.toLowerCase().trim(),
-      deletedAt: null,
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    const resetPasswordToken = jwt.sign(
-      {
-        user: {
-          _id: user._id,
-          email: user.email,
-        },
-      },
-      this.config.getOrThrow<string>('JWTSECRET'),
-      { algorithm: 'HS512', expiresIn: '6h' },
-    );
-
-    const experiedDate = new Date(Date.now() + 6 * 60 * 60 * 1000);
-
-    await this.userModel.updateOne(
-      {
-        _id: user._id,
-      },
-      {
-        $set: {
-          passwordResetExpires: experiedDate,
-          passwordResetToken: resetPasswordToken,
-        },
-      },
-    );
-
-    await this.mailService.sendResetPasswordEmail(
-      user.email,
-      user.name,
-      resetPasswordToken,
-    );
-
-    return true;
-  }
-
-  async resetPassword(token: string, password: string) {
-    const user = await this.userModel.findOne({
-      passwordResetToken: token,
-      passwordResetExpires: { $gt: new Date() },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Token inválido ou expirado');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await this.userModel.updateOne(
-      { _id: user._id },
-      {
-        $set: { password: hashedPassword },
-        $unset: { passwordResetToken: 1, passwordResetExpires: 1 },
-      },
-    );
-
-    return true;
   }
 }
