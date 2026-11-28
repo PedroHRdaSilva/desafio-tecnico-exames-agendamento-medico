@@ -1,7 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +16,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignupData, signupSchema } from "@/app/signup/schema";
+import { api, ApiError } from "@/lib/api";
+import { useState } from "react";
 
 export function SignupForm() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
   const form = useForm<SignupData>({
     resolver: zodResolver(signupSchema),
     mode: "onTouched",
@@ -27,8 +34,33 @@ export function SignupForm() {
     },
   });
 
-  function onSubmit(data: SignupData) {
-    console.log(data);
+  async function onSubmit(data: SignupData) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, ...payload } = data;
+    setLoading(true);
+    try {
+      await api("/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      form.reset();
+      toast.success("Conta criada com sucesso!");
+      router.push("/signin");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        form.setError("email", { message: error.message });
+        return;
+      }
+
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível conectar ao servidor. Tente novamente.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -104,7 +136,7 @@ export function SignupForm() {
           className="w-full"
           disabled={form.formState.isSubmitting}
         >
-          Criar conta
+          {loading ? "Criando conta..." : "Criar conta"}
         </Button>
       </form>
     </Form>

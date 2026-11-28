@@ -17,12 +17,18 @@ import {
   ResetPasswordData,
   resetPasswordSchema,
 } from "@/app/reset-password/schema";
+import { api, ApiError } from "@/lib/api";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type ResetPasswordFormProps = {
   token: string;
 };
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const form = useForm<ResetPasswordData>({
     resolver: zodResolver(resetPasswordSchema),
     mode: "onTouched",
@@ -32,9 +38,33 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     },
   });
 
-  function onSubmit({ password }: ResetPasswordData) {
-    console.log({ token, password });
-  }
+  const onSubmit = async ({ password }: ResetPasswordData) => {
+    setLoading(true);
+    try {
+      await api("/users/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token, password }),
+      });
+
+      form.reset();
+      toast.success("Senha redefinida com sucesso!");
+      router.push("/signin");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 400) {
+        toast.error("Token inválido ou expirado. Solicite um novo link.");
+        router.push("/forgot-password");
+        return;
+      }
+
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : "Não foi possível conectar ao servidor. Tente novamente.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -77,7 +107,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           className="w-full"
           disabled={form.formState.isSubmitting}
         >
-          Redefinir senha
+          {loading ? "Redefinindo..." : "Redefinir senha"}
         </Button>
       </form>
     </Form>
