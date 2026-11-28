@@ -1,3 +1,5 @@
+import { SESSION_EXPIRED_URL } from "@/lib/session";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
 
 export class ApiError extends Error {
@@ -30,6 +32,16 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: "include",
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
+
+  // Token expirou com o usuário já na página: manda para o login.
+  // No /auth/login o 401 é senha errada, então o signin trata sozinho.
+  if (
+    res.status === 401 &&
+    path !== "/auth/login" &&
+    typeof window !== "undefined"
+  ) {
+    window.location.href = SESSION_EXPIRED_URL;
+  }
 
   if (!res.ok) {
     throw new ApiError(res.status, await extractErrorMessage(res));

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Nome do cookie httpOnly que a API define no login
-const SESSION_COOKIE = "token";
+import { SESSION_COOKIE } from "@/lib/session";
 
 const protectedRoutes = ["/dashboard"];
 const authRoutes = ["/signin", "/signup"];
@@ -21,7 +20,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/signin", request.url));
   }
 
-  if (matches(pathname, authRoutes) && hasSession) {
+  // ?session=expired: o cookie existe mas a API recusou o token.
+  // Sem essa exceção, /signin → /dashboard → /signin viraria um loop.
+  const sessionExpired = request.nextUrl.searchParams.has("session");
+
+  if (matches(pathname, authRoutes) && hasSession && !sessionExpired) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
